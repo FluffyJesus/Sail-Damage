@@ -191,7 +191,7 @@ All settings are in `BepInEx/config/kap.saildamage.cfg`.
 
 ## Compatibility and saves
 
-- **Saves:** damage, patches and studding sail damage are stored in the save's own mod data, matched to each sail by its place on the mast. Saves without the mod load fine.
+- **Saves:** damage, patches and studding sail damage are stored in the save's own mod data, matched to each sail by its place on the mast.
 - **Sailcloth** is a new item; bolts lying on your boat need the mod to load.
 - **Studding Sails:** full support, see above.
 - Works with modded boats and sails that use the game's own sail system.
