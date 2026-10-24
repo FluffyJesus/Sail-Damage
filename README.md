@@ -77,7 +77,6 @@ Junk and fin sails are stiffened with battens. They still wear and lose thrust, 
 
 ## What it looks like
 
-<!-- screenshot: close-up of holes in a sail -->
 
 Holes are cut into the sail's own canvas, not painted on top, so you can see through them:
 
@@ -88,13 +87,13 @@ Holes are cut into the sail's own canvas, not painted on top, so you can see thr
 
 ### 🏳️ Torn away
 
-<!-- screenshot: a torn-off square sail flapping from its yard -->
 
 At 100% the lower half of the sail is gone. What is left hangs from the yard with a ragged edge and flaps in the wind. Sheets and lines that were tied to the lost corners disappear with it. A lateen sail tears loose at its tack instead and hangs whole from its yard.
 
 ### 🩹 Patches
 
-<!-- screenshot: a sail with grey patches -->
+<img width="1143" height="1064" alt="image" src="https://github.com/user-attachments/assets/291c16aa-6930-4da6-a68c-692f522c3504" />
+
 
 Mended holes are covered with patches of plain, undyed grey sailcloth: octagons with a dark hem and a line of stitches. Holes are closed **one by one, each with its own patch**, smallest first, so you can watch your work. Patches stay on the sail as its history until a shipyard replaces the cloth.
 
@@ -114,13 +113,11 @@ The bell warns about *any* sail that would be overloaded if it were fully set, f
 
 ### ⚓ At the shipyard
 
-<!-- screenshot: the Patch Sails button at the shipyard -->
 
 A **Patch Sails** button appears under *Repair Ship*. It shows the average damage of your sails and adds a line to the order. Each sail costs up to **70% of a new sail** of its kind, in proportion to its damage. Paid sails come back as new: no holes and no patches.
 
 ### 🧵 At sea: sailcloth
 
-<!-- screenshot: a bolt of sailcloth in a shop -->
 
 A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
@@ -132,7 +129,6 @@ A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
 ## Studding Sails compatibility
 
-<!-- screenshot: studding sails with their own holes -->
 
 Sail Damage fully supports the **Studding Sails** mod. Studding sails are treated as sails of their own, and **each side (port and starboard) is separate**:
 
