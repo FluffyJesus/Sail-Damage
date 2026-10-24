@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -10,7 +10,7 @@ namespace SailDamage
     {
         public const string Guid = "kap.saildamage";
         public const string Name = "Sail Damage";
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<float> OverloadStart;

@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 
 namespace SailDamage
@@ -27,7 +27,7 @@ namespace SailDamage
         private static Sail[] Sails(Shipyard yard)
         {
             GameObject boat = yard != null ? yard.GetCurrentBoat() : null;
-            return boat != null ? boat.GetComponentsInChildren<Sail>() : new Sail[0];
+            return boat != null ? DamageModel.BoatSails(boat.transform) : new Sail[0];
         }
 
         // Average damage of the boat's installed sails (studding sails included), weighted by area, for the button text.

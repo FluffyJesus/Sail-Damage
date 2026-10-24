@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using UnityEngine;
@@ -53,12 +53,20 @@ namespace SailDamage
                 return;
             StuddingCompat.TryInit();
 
+            // At the shipyard the boat stands in the yard while the wind still fills the sails on show: a storm in port
+            // tore them (Кэп, 1.0.1). The swing speeds are dropped too, so leaving the yard is not taken for a hit.
+            if (GameState.currentShipyard != null)
+            {
+                lastSpeed.Clear();
+                return;
+            }
+
             refreshTimer -= Time.fixedDeltaTime;
             if (refreshTimer <= 0f)
             {
                 refreshTimer = 1f;
                 Transform boat = GameState.currentBoat != null ? GameState.currentBoat : GameState.lastBoat;
-                sails = boat != null ? boat.GetComponentsInChildren<Sail>() : new Sail[0];
+                sails = BoatSails(boat);
             }
 
             foreach (Sail sail in sails)
@@ -103,6 +111,19 @@ namespace SailDamage
                         PressureLogger.Instance?.ShowMessage($"{sail.sailName}, {name} studding sail: overloaded, damage {total * 100f:F0}%");
                 }
             }
+        }
+
+        /// <summary>
+        /// Every sail of a boat. GameState.currentBoat is the boat's model (BoatRefs.boatModel) with the masts, but
+        /// MoreSailwindSails hangs its Fisherman's sails on stays under the boat itself (Кэп, 1.0.0: a player's
+        /// junk showed them never damaged), so look from the boat's root.
+        /// </summary>
+        internal static Sail[] BoatSails(Transform boat)
+        {
+            if (boat == null)
+                return new Sail[0];
+            BoatRefs refs = boat.GetComponentInParent<BoatRefs>();
+            return (refs != null ? refs.transform : boat).GetComponentsInChildren<Sail>();
         }
 
         private Stud StudOf(Sail sail)

@@ -117,7 +117,7 @@ namespace SailDamage
         private static float MaxFullPressure(Transform boat)
         {
             float max = 0f;
-            foreach (Sail sail in boat.GetComponentsInChildren<Sail>())
+            foreach (Sail sail in DamageModel.BoatSails(boat))
             {
                 if (sail.shipRigidbody == null)
                     continue;

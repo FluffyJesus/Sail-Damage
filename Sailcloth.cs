@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
@@ -290,7 +290,7 @@ namespace SailDamage
         {
             Sail target = null;
             left = 0f;
-            foreach (Sail s in boat.GetComponentsInChildren<Sail>())
+            foreach (Sail s in DamageModel.BoatSails(boat))
             {
                 float w = Work(s);
                 left += w;

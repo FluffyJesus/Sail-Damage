@@ -75,7 +75,7 @@ namespace SailDamage
             if (Plugin.TestKeys.Value && boat != null && Input.GetKeyDown(KeyCode.F9))
             {
                 bool reset = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-                foreach (Sail sail in boat.GetComponentsInChildren<Sail>())
+                foreach (Sail sail in DamageModel.BoatSails(boat))
                 {
                     if (reset)
                     {
@@ -106,7 +106,7 @@ namespace SailDamage
                 return;
             timer = 0.5f;
 
-            foreach (Sail sail in boat.GetComponentsInChildren<Sail>())
+            foreach (Sail sail in DamageModel.BoatSails(boat))
             {
                 if (noShader)
                     return;
@@ -141,7 +141,7 @@ namespace SailDamage
         private void DumpSails(Transform boat)
         {
             Plugin.Log.LogInfo($"===== DUMP {boat.name} =====");
-            foreach (Sail sail in boat.GetComponentsInChildren<Sail>())
+            foreach (Sail sail in DamageModel.BoatSails(boat))
             {
                 holes.TryGetValue(sail, out Holes h);
                 Renderer r = sail.cloth != null ? sail.cloth.GetComponent<Renderer>() : null;
@@ -288,6 +288,8 @@ namespace SailDamage
                 height = Size(main.height * Mathf.Abs(sc.y) * uv.height);
                 if (flat != null)
                     width = height = 1024; // a plain colour, so resolution is only for the tears
+                else if (main.width <= 16 && main.height <= 16)
+                    width = height = 1024; // a plain texture (MoreSailwindSails' Texture2D.whiteTexture): resolution is for the tears
 
 
                 // Bake the canvas over the mesh UV rectangle, with the material tiling, into our own texture.

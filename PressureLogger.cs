@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using HarmonyLib;
@@ -70,7 +70,7 @@ namespace SailDamage
             if (boat == null)
                 return;
             if (sails.Length == 0)
-                sails = boat.GetComponentsInChildren<Sail>();
+                sails = DamageModel.BoatSails(boat);
 
             var line = new StringBuilder();
             line.Append("t=").Append(T());
@@ -101,7 +101,7 @@ namespace SailDamage
 
             Plugin.Log.LogInfo(line.ToString());
 
-            sails = boat.GetComponentsInChildren<Sail>();
+            sails = DamageModel.BoatSails(boat);
             peakSwing.Clear();
         }
 

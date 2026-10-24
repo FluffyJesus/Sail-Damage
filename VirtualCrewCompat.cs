@@ -163,7 +163,7 @@ namespace SailDamage
             Transform boat = Boat();
             if (boat == null || DamageModel.Instance == null)
                 return;
-            foreach (Sail s in boat.GetComponentsInChildren<Sail>())
+            foreach (Sail s in DamageModel.BoatSails(boat))
                 holes += DamageModel.Instance.HoleArea(s);
             foreach (ShipItemSailcloth c in FindObjectsOfType<ShipItemSailcloth>())
                 if (c.sold && c.held == null && OnBoat(c, boat))
