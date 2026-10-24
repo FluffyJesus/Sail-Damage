@@ -124,7 +124,7 @@ A **Patch Sails** button appears under *Repair Ship*. It shows the average damag
 
 A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
-- **Where:** at eleven shops that sell oakum, across all three regions. Each keeps two bolts on display, next to the oakum.
+- **Where:** at shops that sell oakum, across all three regions. Each keeps two bolts on display.
 - **How to use:** put the bolt down on deck, look at it and **hold the right mouse button**. A needle starts sewing and a progress bar fills. The most damaged sail of your boat is mended first.
 - **How much:** one bolt mends **100 m²** of holes (sail area × damage), at **2 m² per second**. The bolt shows how much cloth is left, and it is used up in the end.
 
