@@ -42,7 +42,7 @@ In vanilla Sailwind you can carry every stitch of canvas through any storm. With
 
 Every sail has its own damage, from **0%** (whole) to **100%** (torn away). Furled sails never take damage.
 
-### 🌬️ Overload
+### Overload
 
 The mod reads the actual wind pressure on each sail, the same number the game uses to push your boat. It already includes wind speed, the angle of the sail to the wind, the sail's height above the water (upper sails catch more wind), and the shadow of other sails.
 
@@ -50,7 +50,7 @@ The mod reads the actual wind pressure on each sail, the same number the game us
 - In a storm a fully set sail goes over the limit and starts tearing, slowly at first and faster the harder it blows.
 - Reefing a sail lowers its pressure. Taking in canvas in time is the whole point.
 
-### 💥 Swing hits
+### Swing hits
 
 Fore-and-aft sails (gaff, lateen, jibs and the like) swing on their hinge. When a sail flies across and stops dead at the end of its sheet, the cloth takes a blow:
 
@@ -60,7 +60,7 @@ Fore-and-aft sails (gaff, lateen, jibs and the like) swing on their hinge. When 
 
 Every hit shows a short message on screen with the damage it did.
 
-### 🧱 Battened sails
+### Battened sails
 
 Junk and fin sails are stiffened with battens. They still wear and lose thrust, but they never drop below **25% health** and never tear away.
 
@@ -91,7 +91,7 @@ Holes are cut into the sail's own canvas, not painted on top, so you can see thr
 
 At 100% the lower half of the sail is gone. What is left hangs from the yard with a ragged edge and flaps in the wind. Sheets and lines that were tied to the lost corners disappear with it. A lateen sail tears loose at its tack instead and hangs whole from its yard.
 
-### 🩹 Patches
+### Patches
 
 <!-- screenshot: a sail with grey patches -->
 
@@ -111,13 +111,13 @@ The bell warns about *any* sail that would be overloaded if it were fully set, f
 
 ## Repairs
 
-### ⚓ At the shipyard
+### At the shipyard
 
 <!-- screenshot: the Patch Sails button at the shipyard -->
 
 A **Patch Sails** button appears under *Repair Ship*. It shows the average damage of your sails and adds a line to the order. Each sail costs up to **70% of a new sail** of its kind, in proportion to its damage. Paid sails come back as new: no holes and no patches.
 
-### 🧵 At sea: sailcloth
+### At sea: sailcloth
 
 <!-- screenshot: a bolt of sailcloth in a shop -->
 
