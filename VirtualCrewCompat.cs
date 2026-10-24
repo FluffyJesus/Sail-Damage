@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Reflection;
 using HarmonyLib;
@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SailDamage
 {
-    // Virtual Crew (com.zorkinian.virtualcrew) mends sails too (Кэп, 1.1.0): a "Mend Sails" button in its Maintenance
+    // Virtual Crew (com.zorkinian.virtualcrew) mends sails too (Кэп, 1.0.0): a "Mend Sails" button in its Maintenance
     // window sends a free deckhand to sew, from a bolt of sailcloth on board, like the player does. He walks about the
     // deck with the bolt in hand; his speed follows his dexterity (1..5): 3 sews like the player.
     // Virtual Crew is not referenced: its types are reached by reflection, as Swab Decks does its work
@@ -70,6 +70,8 @@ namespace SailDamage
             if (window == null || manager == null || crewman == null || coordinator == null)
                 return;
             MethodInfo draw = AccessTools.Method(window, "DrawWindow");
+            Type resizer = AccessTools.TypeByName("SailwindVirtualCrew.WindowResizer");
+            MethodInfo resize = resizer != null ? AccessTools.Method(resizer, "HandleInWindow") : null;
             managerInstance = AccessTools.Property(manager, "Instance");
             crewList = AccessTools.Property(manager, "Crew");
             deckhandCapable = AccessTools.Method(manager, "IsDeckhandCapable", new[] { crewman });
@@ -83,13 +85,18 @@ namespace SailDamage
             releaseItem = AccessTools.Method(coordinator, "ReleaseTemporaryItem", new[] { crewman, typeof(object) });
             cancel = AccessTools.Method(coordinator, "Cancel", new[] { typeof(object) });
             activeBoat = resolver != null ? AccessTools.Method(resolver, "GetActiveTopBoat") : null;
-            if (draw == null || managerInstance == null || crewList == null || deckhandCapable == null || currentTask == null ||
+            if (draw == null || resize == null || managerInstance == null || crewList == null || deckhandCapable == null || currentTask == null ||
                 dexterity == null || exhausted == null || coordinatorInstance == null || randomDeck == null || cancel == null)
             {
                 Plugin.Log.LogWarning("CREW Virtual Crew found, but not the parts we need: no Mend Sails button");
                 return;
             }
-            new Harmony(Plugin.Guid + ".virtualcrew").Patch(draw, postfix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(DrawWindowPostfix)));
+            // The window ends its scrolling content in WindowResizer.HandleInWindow and pushes the resize handle to the
+            // bottom; anything drawn after that fell off the window (Кэп, 1.0.0). Our block goes in just before it.
+            var harmony = new Harmony(Plugin.Guid + ".virtualcrew");
+            harmony.Patch(draw, prefix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(DrawWindowPrefix)),
+                                postfix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(DrawWindowPostfix)));
+            harmony.Patch(resize, prefix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(HandleInWindowPrefix)));
             present = true;
             Plugin.Log.LogInfo("CREW Virtual Crew found: Mend Sails button in its Maintenance window");
         }
@@ -271,7 +278,29 @@ namespace SailDamage
 
         // ------------------------------------------------------------ Maintenance window
 
-        private static void DrawWindowPostfix()
+        private static bool inMaintenance;
+
+        private static void DrawWindowPrefix() => inMaintenance = true;
+
+        private static void DrawWindowPostfix() => inMaintenance = false;
+
+        private static void HandleInWindowPrefix()
+        {
+            if (!inMaintenance)
+                return;
+            inMaintenance = false;
+            try
+            {
+                DrawSails();
+            }
+            catch (Exception e)
+            {
+                GUI.enabled = true;
+                Plugin.Log.LogWarning($"CREW Maintenance window: {e.Message}");
+            }
+        }
+
+        private static void DrawSails()
         {
             VirtualCrewCompat me = instance;
             if (me == null)

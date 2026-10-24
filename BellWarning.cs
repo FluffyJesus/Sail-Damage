@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -67,7 +67,7 @@ namespace SailDamage
         {
             if (!Plugin.StormBell.Value || !GameState.playing)
                 return;
-            // Unscaled: asleep the game runs 16 times faster, and the bell rang every few seconds (Кэп, 1.1.0).
+            // Unscaled: asleep the game runs 16 times faster, and the bell rang every few seconds (Кэп, 1.0.0).
             checkTimer -= Time.unscaledDeltaTime;
             if (checkTimer > 0f)
                 return;
@@ -95,7 +95,7 @@ namespace SailDamage
             }
         }
 
-        // Asleep on board while a set sail tears: the bell wakes you (Кэп, 1.1.0). Only when sails really tear, not for
+        // Asleep on board while a set sail tears: the bell wakes you (Кэп, 1.0.0). Only when sails really tear, not for
         // a storm over furled canvas, and not again for WakeCooldownHours of game time after it woke you.
         private void WakeIfTearing()
         {
