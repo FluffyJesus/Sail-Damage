@@ -131,7 +131,7 @@ A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
 ---
 
-## With Virtual Crew
+### With Virtual Crew
 With the Virtual Crew mod, your crew can mend sails for you. Its Maintenance window gets a Sails section: the area of holes on your boat, the sailcloth you carry, and a Mend Sails button.
 
 The free deckhand with the best dexterity takes a bolt of sailcloth from the boat and walks about the deck sewing, worst sail first.
