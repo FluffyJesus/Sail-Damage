@@ -1,4 +1,4 @@
-# ⛵ Sail Damage
+# Sail Damage
 
 **Sails that tear, flap, and need mending.** A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Sailwind**.
 
