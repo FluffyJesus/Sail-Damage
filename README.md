@@ -16,7 +16,7 @@ In vanilla Sailwind you can carry every stitch of canvas through any storm. With
 - [What it looks like](#what-it-looks-like)
 - [The storm bell](#the-storm-bell)
 - [Repairs](#repairs)
-- [With Virtual Crew](#with-vitrual-crew)
+- [With Virtual Crew](#with-virtual-crew)
 - [Studding Sails compatibility](#studding-sails-compatibility)
 - [Installation](#installation)
 - [Configuration](#configuration)
