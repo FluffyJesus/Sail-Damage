@@ -203,6 +203,7 @@ All settings are in `BepInEx/config/kap.saildamage.cfg`.
 - **Sailcloth** is a new item; bolts lying on your boat need the mod to load.
 - **Studding Sails:** full support, see above.
 - **Virtual Crew:** deckhands can mend sails from the Maintenance window, see above.
+- **Fisherman's staysails:** Fisherman's staysails tear, show holes and get mended like any other sail. Not required: Sail Damage works without it.
 - Works with modded boats and sails that use the game's own sail system.
 
 ---
