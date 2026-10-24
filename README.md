@@ -85,7 +85,7 @@ Holes are cut into the sail's own canvas, not painted on top, so you can see thr
 - The pattern belongs to that sail. It is the same after loading a save, and it grows from the holes you already have instead of jumping around.
 - The sail's colour is kept, so painted sails tear just as nicely.
 
-### 🏳️ Torn away
+### Torn away
 
 <!-- screenshot: a torn-off square sail flapping from its yard -->
 
