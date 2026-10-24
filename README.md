@@ -4,7 +4,7 @@
 
 In vanilla Sailwind you can carry every stitch of canvas through any storm. With Sail Damage, too much sail in too much wind will cost you: the cloth rips, the holes grow, the boat slows down, and in the end the sail tears away and flaps from its yard like a flag. Reef in time, or bring sailcloth and a needle.
 
-<!-- screenshot: a brig in a storm with torn sails -->
+<img width="1567" height="1397" alt="image" src="https://github.com/user-attachments/assets/585a5445-8710-4c99-a2f6-f5ac87b34b32" />
 
 ---
 
