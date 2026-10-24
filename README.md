@@ -1,9 +1,10 @@
-# Sail Damage
+# ⛵ Sail Damage
 
 **Sails that tear, flap, and need mending.** A [BepInEx](https://github.com/BepInEx/BepInEx) mod for **Sailwind**.
 
 In vanilla Sailwind you can carry every stitch of canvas through any storm. With Sail Damage, too much sail in too much wind will cost you: the cloth rips, the holes grow, the boat slows down, and in the end the sail tears away and flaps from its yard like a flag. Reef in time, or bring sailcloth and a needle.
 
+<!-- screenshot: a brig in a storm with torn sails -->
 
 ---
 
@@ -26,15 +27,15 @@ In vanilla Sailwind you can carry every stitch of canvas through any storm. With
 
 | | |
 |---|---|
-|  **Overload** | A set sail in storm-force wind slowly tears. |
-|  **Swing hits** | A boom slamming into its sheet limit (an uncontrolled gybe, a slack sheet) rips the cloth in one blow. |
-|  **Lost thrust** | A torn sail pushes less, in proportion to its damage. |
-|  **Real holes** | Tears and ragged notches are cut into the canvas itself, and they grow with the damage. |
-|  **Tear-off** | At 100% the lower part of the sail is gone and the rag flaps loose from the yard. |
-|  **Storm bell** | A ship's bell warns you while the wind is strong enough to tear your sails. |
-|  **Mending at sea** | Buy a bolt of sailcloth and sew patches over the holes yourself. |
-|  **Shipyard repair** | Pay the shipyard to make your sails as good as new. |
-|  **Studding Sails** | Full support: studding sails tear, lose thrust and get mended on their own, side by side. |
+| 🌬️ **Overload** | A set sail in storm-force wind slowly tears. |
+| 💥 **Swing hits** | A boom slamming into its sheet limit (an uncontrolled gybe, a slack sheet) rips the cloth in one blow. |
+| 📉 **Lost thrust** | A torn sail pushes less, in proportion to its damage. |
+| 🕳️ **Real holes** | Tears and ragged notches are cut into the canvas itself, and they grow with the damage. |
+| 🏳️ **Tear-off** | At 100% the lower part of the sail is gone and the rag flaps loose from the yard. |
+| 🔔 **Storm bell** | A ship's bell warns you while the wind is strong enough to tear your sails. |
+| 🧵 **Mending at sea** | Buy a bolt of sailcloth and sew patches over the holes yourself. |
+| ⚓ **Shipyard repair** | Pay the shipyard to make your sails as good as new. |
+| 🪢 **Studding Sails** | Full support: studding sails tear, lose thrust and get mended on their own, side by side. |
 
 ---
 
@@ -42,7 +43,7 @@ In vanilla Sailwind you can carry every stitch of canvas through any storm. With
 
 Every sail has its own damage, from **0%** (whole) to **100%** (torn away). Furled sails never take damage.
 
-### Overload
+### 🌬️ Overload
 
 The mod reads the actual wind pressure on each sail, the same number the game uses to push your boat. It already includes wind speed, the angle of the sail to the wind, the sail's height above the water (upper sails catch more wind), and the shadow of other sails.
 
@@ -50,7 +51,7 @@ The mod reads the actual wind pressure on each sail, the same number the game us
 - In a storm a fully set sail goes over the limit and starts tearing, slowly at first and faster the harder it blows.
 - Reefing a sail lowers its pressure. Taking in canvas in time is the whole point.
 
-### Swing hits
+### 💥 Swing hits
 
 Fore-and-aft sails (gaff, lateen, jibs and the like) swing on their hinge. When a sail flies across and stops dead at the end of its sheet, the cloth takes a blow:
 
@@ -60,7 +61,7 @@ Fore-and-aft sails (gaff, lateen, jibs and the like) swing on their hinge. When 
 
 Every hit shows a short message on screen with the damage it did.
 
-### Battened sails
+### 🧱 Battened sails
 
 Junk and fin sails are stiffened with battens. They still wear and lose thrust, but they never drop below **25% health** and never tear away.
 
@@ -85,13 +86,13 @@ Holes are cut into the sail's own canvas, not painted on top, so you can see thr
 - The pattern belongs to that sail. It is the same after loading a save, and it grows from the holes you already have instead of jumping around.
 - The sail's colour is kept, so painted sails tear just as nicely.
 
-### Torn away
+### 🏳️ Torn away
 
 <!-- screenshot: a torn-off square sail flapping from its yard -->
 
 At 100% the lower half of the sail is gone. What is left hangs from the yard with a ragged edge and flaps in the wind. Sheets and lines that were tied to the lost corners disappear with it. A lateen sail tears loose at its tack instead and hangs whole from its yard.
 
-### Patches
+### 🩹 Patches
 
 <!-- screenshot: a sail with grey patches -->
 
@@ -111,13 +112,13 @@ The bell warns about *any* sail that would be overloaded if it were fully set, f
 
 ## Repairs
 
-### At the shipyard
+### ⚓ At the shipyard
 
 <!-- screenshot: the Patch Sails button at the shipyard -->
 
 A **Patch Sails** button appears under *Repair Ship*. It shows the average damage of your sails and adds a line to the order. Each sail costs up to **70% of a new sail** of its kind, in proportion to its damage. Paid sails come back as new: no holes and no patches.
 
-### At sea: sailcloth
+### 🧵 At sea: sailcloth
 
 <!-- screenshot: a bolt of sailcloth in a shop -->
 
@@ -158,7 +159,8 @@ No settings needed. If Studding Sails is not installed, the mod simply works wit
    ```
 3. Start the game. The settings file appears at `BepInEx/config/kap.saildamage.cfg` after the first launch.
 
-Keep `ship-bell.wav` next to the DLL: without it the storm bell is silent. You can swap it for your own sound.
+Keep `ship-bell.wav` next to the DLL: without it the storm bell is silent.
+---
 
 ## Configuration
 
@@ -194,6 +196,7 @@ All settings are in `BepInEx/config/kap.saildamage.cfg`.
 - **Saves:** damage, patches and studding sail damage are stored in the save's own mod data, matched to each sail by its place on the mast. Saves without the mod load fine.
 - **Sailcloth** is a new item; bolts lying on your boat need the mod to load.
 - **Studding Sails:** full support, see above.
+- **HatchTarp:** both mods sell their canvas at the same oakum shops, placed side by side.
 - Works with modded boats and sails that use the game's own sail system.
 
 ---
