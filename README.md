@@ -130,6 +130,15 @@ A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
 ---
 
+## 👥 With Virtual Crew
+With the Virtual Crew mod, your crew can mend sails for you. Its Maintenance window gets a Sails section: the area of holes on your boat, the sailcloth you carry, and a Mend Sails button.
+
+The free deckhand with the best dexterity takes a bolt of sailcloth from the boat and walks about the deck sewing, worst sail first.
+His speed follows his dexterity: 3 sews as fast as you, 1 three times slower, 5 almost twice as fast.
+He stops when the sails are mended, the sailcloth runs out, he is too tired, or you press Stop Mending.
+
+---
+
 ## Studding Sails compatibility
 
 
@@ -194,6 +203,7 @@ All settings are in `BepInEx/config/kap.saildamage.cfg`.
 - **Saves:** damage, patches and studding sail damage are stored in the save's own mod data, matched to each sail by its place on the mast.
 - **Sailcloth** is a new item; bolts lying on your boat need the mod to load.
 - **Studding Sails:** full support, see above.
+- **Virtual Crew:** deckhands can mend sails from the Maintenance window, see above.
 - Works with modded boats and sails that use the game's own sail system.
 
 ---
