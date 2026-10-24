@@ -129,8 +129,6 @@ A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 - **How to use:** put the bolt down on deck, look at it and **hold the right mouse button**. A needle starts sewing and a progress bar fills. The most damaged sail of your boat is mended first.
 - **How much:** one bolt mends **100 m²** of holes (sail area × damage), at **2 m² per second**. The bolt shows how much cloth is left, and it is used up in the end.
 
----
-
 ### With Virtual Crew
 With the Virtual Crew mod, your crew can mend sails for you. Its Maintenance window gets a Sails section: the area of holes on your boat, the sailcloth you carry, and a Mend Sails button.
 
