@@ -118,6 +118,7 @@ A **Patch Sails** button appears under *Repair Ship*. It shows the average damag
 
 ### 🧵 At sea: sailcloth
 
+<img width="1750" height="1203" alt="image" src="https://github.com/user-attachments/assets/b391bfb5-f9bf-4a45-9319-15e27e63eea9" />
 
 A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
