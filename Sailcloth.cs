@@ -266,15 +266,7 @@ namespace SailDamage
                 Say("Out of sailcloth");
                 return false;
             }
-            Sail target = null;
-            float left = 0f;
-            foreach (Sail s in boat.GetComponentsInChildren<Sail>())
-            {
-                float w = Work(s);
-                left += w;
-                if (w > 0.001f && (target == null || Worst(s) > Worst(target)))
-                    target = s;
-            }
+            Sail target = WorstSail(boat, out float left);
             if (target == null)
             {
                 Say("Sails are intact");
@@ -287,13 +279,36 @@ namespace SailDamage
             }
             lastWork = Time.time;
 
-            float m2 = Mathf.Min(Plugin.MendRate.Value * Time.deltaTime, cloth.amount / Sailcloth.FullAmount * Plugin.SailclothArea.Value);
+            doneWork += Sew(target, cloth, Plugin.MendRate.Value * Time.deltaTime, "by hand");
+            if (cloth == null || cloth.amount <= 0.0001f)
+                Say("Out of sailcloth");
+            return true;
+        }
+
+        /// <summary>The sail of the boat with the worst holes (studding sails included), null if all are whole.</summary>
+        internal static Sail WorstSail(Transform boat, out float left)
+        {
+            Sail target = null;
+            left = 0f;
+            foreach (Sail s in boat.GetComponentsInChildren<Sail>())
+            {
+                float w = Work(s);
+                left += w;
+                if (w > 0.001f && (target == null || Worst(s) > Worst(target)))
+                    target = s;
+            }
+            return target;
+        }
+
+        /// <summary>Mends up to <paramref name="m2"/> m² of the sail from the bolt; a used-up bolt goes. Returns m² mended.</summary>
+        internal static float Sew(Sail target, ShipItemSailcloth cloth, float m2, string who)
+        {
+            m2 = Mathf.Min(m2, cloth.amount / Sailcloth.FullAmount * Plugin.SailclothArea.Value);
             float done = DamageModel.Instance.PatchArea(target, m2);
-            doneWork += done;
             cloth.amount = Mathf.Max(0f, cloth.amount - done / Plugin.SailclothArea.Value * Sailcloth.FullAmount);
             if (Work(target) <= 0.001f)
             {
-                Plugin.Log.LogInfo($"MEND {target.sailName}: patched by hand, sailcloth left {cloth.amount:F2}");
+                Plugin.Log.LogInfo($"MEND {target.sailName}: patched {who}, sailcloth left {cloth.amount:F2}");
                 UISoundPlayer.instance?.PlayUISound(UISounds.oakum, 1f, 1f);
             }
             cloth.UpdateLookText();
@@ -301,10 +316,9 @@ namespace SailDamage
             {
                 // The bolt is used up: it goes (Кэп, 0.5.2).
                 Plugin.Log.LogInfo("MEND sailcloth used up");
-                Say("Out of sailcloth");
                 cloth.DestroyItem();
             }
-            return true;
+            return done;
         }
 
         internal void Say(string text)

@@ -37,6 +37,10 @@ namespace SailDamage
         private readonly Dictionary<Sail, float> lastReported = new Dictionary<Sail, float>();
         private Sail[] sails = new Sail[0];
         private float refreshTimer;
+        private float lastOverload = -100f;
+
+        /// <summary>A set sail (or studding sail) of the boat is tearing from overload right now.</summary>
+        internal bool Tearing => Time.unscaledTime - lastOverload < 2f;
 
         private void Awake()
         {
@@ -85,8 +89,11 @@ namespace SailDamage
                 float set = StuddingCompat.SetShare(sail, side);
                 if (set <= 0.01f)
                     continue;
-                float total = AddStuddingDamage(sail, side, Plugin.OverloadRate.Value * (excess / range) * set * Time.fixedDeltaTime);
                 Stud st = StudOf(sail);
+                float before = st.Damage[side];
+                float total = AddStuddingDamage(sail, side, Plugin.OverloadRate.Value * (excess / range) * set * Time.fixedDeltaTime);
+                if (total > before)
+                    lastOverload = Time.unscaledTime;
                 if (total - st.Reported[side] >= 0.01f)
                 {
                     st.Reported[side] = total;
@@ -190,7 +197,10 @@ namespace SailDamage
                 return;
 
             float range = Mathf.Max(1f, Plugin.OverloadFull.Value - Plugin.OverloadStart.Value);
+            float before = GetDamage(sail);
             float total = AddDamage(sail, Plugin.OverloadRate.Value * (excess / range) * Time.fixedDeltaTime);
+            if (total > before)
+                lastOverload = Time.unscaledTime;
 
             // Overload grows smoothly, so report it every full percent instead of every step.
             lastReported.TryGetValue(sail, out float reported);

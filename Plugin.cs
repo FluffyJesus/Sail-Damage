@@ -10,7 +10,7 @@ namespace SailDamage
     {
         public const string Guid = "kap.saildamage";
         public const string Name = "Sail Damage";
-        public const string Version = "1.0.0";
+        public const string Version = "1.1.0";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<float> OverloadStart;
@@ -86,6 +86,7 @@ namespace SailDamage
             gameObject.AddComponent<BellWarning>();
             gameObject.AddComponent<SailMending>();
             gameObject.AddComponent<SailclothShops>();
+            gameObject.AddComponent<VirtualCrewCompat>();
             new Harmony(Guid).PatchAll();
             Log.LogInfo($"{Name} {Version} loaded");
         }

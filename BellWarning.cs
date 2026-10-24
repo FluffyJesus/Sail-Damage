@@ -59,14 +59,22 @@ namespace SailDamage
             source.spatialBlend = 0f;
         }
 
+        // In game hours (GameState.day * 24 + Sun.globalTime) of the last time the bell woke the player.
+        private float lastWake = float.NegativeInfinity;
+        private const float WakeCooldownHours = 3f;
+
         private void Update()
         {
-            if (clip == null || !Plugin.StormBell.Value || !GameState.playing)
+            if (!Plugin.StormBell.Value || !GameState.playing)
                 return;
-            checkTimer -= Time.deltaTime;
+            // Unscaled: asleep the game runs 16 times faster, and the bell rang every few seconds (Кэп, 1.1.0).
+            checkTimer -= Time.unscaledDeltaTime;
             if (checkTimer > 0f)
                 return;
             checkTimer = 1f;
+            WakeIfTearing();
+            if (clip == null)
+                return;
 
             Transform boat = GameState.currentBoat;
             float pressure = boat != null ? MaxFullPressure(boat) : 0f;
@@ -74,17 +82,36 @@ namespace SailDamage
             if (now && !storm)
             {
                 Plugin.Log.LogInfo($"BELL storm: full-sail pressure {pressure:F1} > {Plugin.OverloadStart.Value:F1}");
-                nextRing = Time.time; // ring at once when the storm starts
+                nextRing = Time.unscaledTime; // ring at once when the storm starts
             }
             else if (!now && storm)
                 Plugin.Log.LogInfo($"BELL storm over: full-sail pressure {pressure:F1}");
             storm = now;
 
-            if (storm && Time.time >= nextRing)
+            if (storm && Time.unscaledTime >= nextRing)
             {
                 source.PlayOneShot(clip, Plugin.BellVolume.Value);
-                nextRing = Time.time + Random.Range(Plugin.BellMinInterval.Value, Plugin.BellMaxInterval.Value);
+                nextRing = Time.unscaledTime + Random.Range(Plugin.BellMinInterval.Value, Plugin.BellMaxInterval.Value);
             }
+        }
+
+        // Asleep on board while a set sail tears: the bell wakes you (Кэп, 1.1.0). Only when sails really tear, not for
+        // a storm over furled canvas, and not again for WakeCooldownHours of game time after it woke you.
+        private void WakeIfTearing()
+        {
+            if (!GameState.sleeping || !GameState.eyesFullyClosed || Sleep.instance == null || Sun.sun == null ||
+                DamageModel.Instance == null || !DamageModel.Instance.Tearing)
+                return;
+            float now = GameState.day * 24f + Sun.sun.globalTime;
+            if (now - lastWake < WakeCooldownHours)
+                return;
+            lastWake = now;
+            Plugin.Log.LogInfo($"BELL woke the player: sails are tearing (day {GameState.day}, {Sun.sun.globalTime:F1} h)");
+            if (clip != null && source != null)
+                source.PlayOneShot(clip, Plugin.BellVolume.Value);
+            nextRing = Time.unscaledTime + Random.Range(Plugin.BellMinInterval.Value, Plugin.BellMaxInterval.Value);
+            Sleep.instance.WakeUp();
+            PressureLogger.Instance?.ShowMessage("The storm bell woke you: the sails are tearing!");
         }
 
         private static float MaxFullPressure(Transform boat)
