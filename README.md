@@ -87,6 +87,8 @@ Holes are cut into the sail's own canvas, not painted on top, so you can see thr
 
 ### 🏳️ Torn away
 
+<img width="1514" height="1181" alt="image" src="https://github.com/user-attachments/assets/bbe4200a-5a3c-4ed2-939f-6e9ebfffb0c8" />
+
 
 At 100% the lower half of the sail is gone. What is left hangs from the yard with a ragged edge and flaps in the wind. Sheets and lines that were tied to the lost corners disappear with it. A lateen sail tears loose at its tack instead and hangs whole from its yard.
 
