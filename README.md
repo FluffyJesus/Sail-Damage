@@ -125,7 +125,6 @@ A **Patch Sails** button appears under *Repair Ship*. It shows the average damag
 A new item, **sailcloth**: a bundle of folded grey canvas tied with rope.
 
 - **Where:** at eleven shops that sell oakum, across all three regions. Each keeps two bolts on display, next to the oakum.
-- **Price:** 300 per bolt.
 - **How to use:** put the bolt down on deck, look at it and **hold the right mouse button**. A needle starts sewing and a progress bar fills. The most damaged sail of your boat is mended first.
 - **How much:** one bolt mends **100 m²** of holes (sail area × damage), at **2 m² per second**. The bolt shows how much cloth is left, and it is used up in the end.
 
@@ -196,7 +195,6 @@ All settings are in `BepInEx/config/kap.saildamage.cfg`.
 - **Saves:** damage, patches and studding sail damage are stored in the save's own mod data, matched to each sail by its place on the mast. Saves without the mod load fine.
 - **Sailcloth** is a new item; bolts lying on your boat need the mod to load.
 - **Studding Sails:** full support, see above.
-- **HatchTarp:** both mods sell their canvas at the same oakum shops, placed side by side.
 - Works with modded boats and sails that use the game's own sail system.
 
 ---
