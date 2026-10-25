@@ -97,7 +97,10 @@ namespace SailDamage
                 DumpSails(boat);
 
             foreach (Holes done in holes.Values)
+            {
                 done.FinishDraw();
+                done.ApplyCanvas();
+            }
 
             if (!Plugin.ShowHoles.Value || noShader || boat == null)
                 return;
@@ -105,6 +108,7 @@ namespace SailDamage
             if (timer > 0f)
                 return;
             timer = 0.5f;
+            ForgetDestroyed();
 
             foreach (Sail sail in DamageModel.BoatSails(boat))
             {
@@ -128,6 +132,71 @@ namespace SailDamage
                 if (h.NeedsDraw(d, p) || h.StuddingNeedsDraw(sd, sp))
                     h.Draw(d, p, sd, sp);
             }
+        }
+
+        // ---------------------------------------------------------------- SailEmblems (Кэп's painted sails)
+
+        // Plain canvas (no emblem) for each painted sail's studding sails, kept for a sail torn later.
+        private readonly Dictionary<Sail, Texture> cleanCanvas = new Dictionary<Sail, Texture>();
+
+        /// <summary>
+        /// SailEmblems: the sail has a new painted canvas (and the same canvas unpainted, for its studding sails; null
+        /// without them). If we draw this sail, its torn canvas is read again from the painted one and worn at once;
+        /// returns whether we do. Called by reflection, keep the signature.
+        /// </summary>
+        public static bool TakeCanvas(Sail sail, Material painted, Texture clean)
+        {
+            if (instance == null || sail == null)
+                return false;
+            if (clean != null)
+                instance.cleanCanvas[sail] = clean;
+            else
+                instance.cleanCanvas.Remove(sail);
+            if (!instance.holes.TryGetValue(sail, out Holes h) || painted == null)
+                return false;
+            h.SetCanvas(painted, clean);
+            instance.Wear(sail, h);
+            instance.timer = 0f; // draw the tears over it on the next frame
+            return true;
+        }
+
+        /// <summary>SailEmblems: we wear our torn canvas on this sail. Called by reflection, keep the signature.</summary>
+        public static bool Draws(Sail sail) => instance != null && sail != null && instance.holes.ContainsKey(sail);
+
+        private void Wear(Sail sail, Holes h)
+        {
+            Renderer r = sail.cloth != null ? sail.cloth.GetComponent<Renderer>() : null;
+            if (r == null)
+                return;
+            ReefEffectAnimUniversal reef = sail.GetComponentInChildren<ReefEffectAnimUniversal>();
+            if (reef != null && IsFurled(reef))
+                UnfurledMaterial(reef) = h.Material;
+            else
+                r.sharedMaterial = h.Material;
+        }
+
+        // Leaving the shipyard builds every sail again (SaveableBoatCustomization.LoadData): the old ones' canvases
+        // stayed here, one torn texture per damaged sail and visit.
+        private void ForgetDestroyed()
+        {
+            List<Sail> gone = null;
+            foreach (Sail s in holes.Keys)
+                if (s == null)
+                    (gone ??= new List<Sail>()).Add(s);
+            if (gone == null)
+                return;
+            foreach (Sail s in gone)
+            {
+                if (holes.TryGetValue(s, out Holes h) && !h.Busy)
+                {
+                    h.Dispose();
+                    holes.Remove(s);
+                    cleanCanvas.Remove(s);
+                }
+            }
+            failed.RemoveWhere(s => s == null);
+            TornCloths.RemoveWhere(c => c == null);
+            GentleCloths.RemoveWhere(c => c == null);
         }
 
         // The furl placeholder, or a copy of it: Furl() saves renderer.material, which is an "(Instance)" copy.
@@ -205,6 +274,8 @@ namespace SailDamage
                 UnfurledMaterial(reef) = h.Material;
             else
                 r.sharedMaterial = h.Material;
+            if (cleanCanvas.TryGetValue(sail, out Texture clean) && clean != null)
+                h.SetCanvas(src, clean); // a painted sail: its studding sails get the plain canvas
             Plugin.Log.LogInfo($"VISUAL {sail.sailName} ({sail.category}{(DamageModel.IsBattened(sail) ? ", battened" : "")}): '{src.shader.name}' -> '{cutout.name}', canvas {src.mainTexture.name} " +
                                $"{src.mainTexture.width}x{src.mainTexture.height} tiling {src.mainTextureScale} -> {h.Info}");
             return true;
@@ -245,6 +316,16 @@ namespace SailDamage
             internal float Shown = -1f;
             internal readonly string Info;
             internal Texture Texture => texture;
+            internal bool Busy => jobRunning || jobDone;
+
+            // The sail is gone: free what we made for it.
+            internal void Dispose()
+            {
+                UnityEngine.Object.Destroy(Material);
+                UnityEngine.Object.Destroy(texture);
+                if (studTexture != null)
+                    UnityEngine.Object.Destroy(studTexture);
+            }
             internal string State => $"shown {Shown:F2}, frame {(hasFrame ? "yes" : frameFailed ? "failed" : "no")}, torn {tornShown}";
 
             private readonly Sail sail;
@@ -290,52 +371,18 @@ namespace SailDamage
                     width = height = 1024; // a plain colour, so resolution is only for the tears
                 else if (main.width <= 16 && main.height <= 16)
                     width = height = 1024; // a plain texture (MoreSailwindSails' Texture2D.whiteTexture): resolution is for the tears
+                flatUv = flat;
+                this.oldUv = oldUv;
 
-
-                // Bake the canvas over the mesh UV rectangle, with the material tiling, into our own texture.
-                RenderTexture rt = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
-                Graphics.Blit(main, rt, new Vector2(sc.x * uv.width, sc.y * uv.height),
-                    new Vector2(of.x + sc.x * uv.xMin, of.y + sc.y * uv.yMin));
-                RenderTexture before = RenderTexture.active;
-                RenderTexture.active = rt;
-                texture = new Texture2D(width, height, TextureFormat.RGBA32, true);
-                texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                RenderTexture.active = before;
-                RenderTexture.ReleaseTemporary(rt);
-                texture.name = "SailDamage canvas";
-                texture.wrapMode = TextureWrapMode.Clamp;
-                texture.filterMode = main.filterMode;
-                texture.anisoLevel = main.anisoLevel;
-
-                canvas = texture.GetPixels32();
-                if (flat != null)
+                texture = new Texture2D(width, height, TextureFormat.RGBA32, true)
                 {
-                    // The old UVs all sat on one texel, so the sail showed that one colour: keep it everywhere.
-                    int px = Mathf.Clamp(Mathf.FloorToInt(Mathf.Repeat(oldUv.x * sc.x + of.x, 1f) * width), 0, width - 1);
-                    int py = Mathf.Clamp(Mathf.FloorToInt(Mathf.Repeat(oldUv.y * sc.y + of.y, 1f) * height), 0, height - 1);
-                    Color32 one = canvas[py * width + px];
-                    for (int i = 0; i < canvas.Length; i++)
-                        canvas[i] = one;
-                }
-                else if (main.name.StartsWith("ParticleCloud", StringComparison.Ordinal) && MeanUv(smr, out Vector2 mean))
-                {
-                    // Junk-family sails (junk jib, fin sail) use a soft particle blob as their "canvas" and look plain
-                    // in the game; baked as is, the blob showed as a white cloud. Keep the colour at the cloth's middle.
-                    int px = Mathf.Clamp(Mathf.FloorToInt((mean.x - uv.xMin) / uv.width * width), 0, width - 1);
-                    int py = Mathf.Clamp(Mathf.FloorToInt((mean.y - uv.yMin) / uv.height * height), 0, height - 1);
-                    Color32 one = canvas[py * width + px];
-                    for (int i = 0; i < canvas.Length; i++)
-                        canvas[i] = one;
-                    flat = "plain canvas (particle texture)";
-                }
-                for (int i = 0; i < canvas.Length; i++)
-                    canvas[i].a = 255; // the canvas is opaque; only the mask makes holes
+                    name = "SailDamage canvas", wrapMode = TextureWrapMode.Clamp, filterMode = main.filterMode, anisoLevel = main.anisoLevel,
+                };
+                canvas = ReadCanvas(src, out string plain);
+                flat = flat ?? plain;
                 work = new Color32[canvas.Length];
                 rawCanvas = (Color32[])canvas.Clone();
-                long lum = 0;
-                for (int i = 0; i < rawCanvas.Length; i++)
-                    lum += rawCanvas[i].r * 3 + rawCanvas[i].g * 6 + rawCanvas[i].b;
-                rawLum = Mathf.Max(1f, lum / (float)rawCanvas.Length);
+                rawLum = Luminance(rawCanvas);
 
                 Material = new Material(src) { shader = cutout, name = src.name + " (torn)" };
                 Material.mainTexture = texture;
@@ -362,8 +409,116 @@ namespace SailDamage
             }
 
             private readonly Color32[] rawCanvas;
-            private readonly float rawLum;
+            private float rawLum;
             private readonly Vector2 seamAlong;
+            private readonly string flatUv;
+            private readonly Vector2 oldUv;
+
+            // Bake a canvas over the mesh UV rectangle, with the material tiling, at our size.
+            private Color32[] ReadCanvas(Material src, out string plain)
+            {
+                plain = null;
+                Color32[] px = Grab(src.mainTexture, src.mainTextureScale, src.mainTextureOffset);
+                Vector2 sc = src.mainTextureScale, of = src.mainTextureOffset;
+                if (flatUv != null)
+                {
+                    // The old UVs all sat on one texel, so the sail showed that one colour: keep it everywhere.
+                    int x = Mathf.Clamp(Mathf.FloorToInt(Mathf.Repeat(oldUv.x * sc.x + of.x, 1f) * width), 0, width - 1);
+                    int y = Mathf.Clamp(Mathf.FloorToInt(Mathf.Repeat(oldUv.y * sc.y + of.y, 1f) * height), 0, height - 1);
+                    Color32 one = px[y * width + x];
+                    for (int i = 0; i < px.Length; i++)
+                        px[i] = one;
+                }
+                else if (src.mainTexture != null && src.mainTexture.name.StartsWith("ParticleCloud", StringComparison.Ordinal) && MeanUv(smr, out Vector2 mean))
+                {
+                    // Junk-family sails (junk jib, fin sail) use a soft particle blob as their "canvas" and look plain
+                    // in the game; baked as is, the blob showed as a white cloud. Keep the colour at the cloth's middle.
+                    int x = Mathf.Clamp(Mathf.FloorToInt((mean.x - uv.xMin) / uv.width * width), 0, width - 1);
+                    int y = Mathf.Clamp(Mathf.FloorToInt((mean.y - uv.yMin) / uv.height * height), 0, height - 1);
+                    Color32 one = px[y * width + x];
+                    for (int i = 0; i < px.Length; i++)
+                        px[i] = one;
+                    plain = "plain canvas (particle texture)";
+                }
+                for (int i = 0; i < px.Length; i++)
+                    px[i].a = 255; // the canvas is opaque; only the mask makes holes
+                return px;
+            }
+
+            private Color32[] Grab(Texture main, Vector2 sc, Vector2 of)
+            {
+                RenderTexture rt = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+                Graphics.Blit(main, rt, new Vector2(sc.x * uv.width, sc.y * uv.height),
+                    new Vector2(of.x + sc.x * uv.xMin, of.y + sc.y * uv.yMin));
+                RenderTexture before = RenderTexture.active;
+                RenderTexture.active = rt;
+                var read = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                read.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                RenderTexture.active = before;
+                RenderTexture.ReleaseTemporary(rt);
+                Color32[] px = read.GetPixels32();
+                UnityEngine.Object.Destroy(read);
+                return px;
+            }
+
+            private static float Luminance(Color32[] px)
+            {
+                long lum = 0;
+                for (int i = 0; i < px.Length; i++)
+                    lum += px[i].r * 3 + px[i].g * 6 + px[i].b;
+                return Mathf.Max(1f, lum / (float)px.Length);
+            }
+
+            // ------------------------------------------------------------ SailEmblems
+
+            // Sail Emblems paints its emblem into a copy of the canvas and hands each new one over (TakeCanvas): the
+            // canvas is read again from it, tears and patches drawn over it again. The same canvas without the emblem
+            // (rawStud) goes to the studding sails (studBase), else they showed a strip of it, and gives the patches
+            // their weave.
+            private Material pendingCanvas;
+            private Texture pendingClean;
+            private bool hasPending;
+            private Color32[] rawStud, studBase;
+            private float plainLum;
+
+            internal void SetCanvas(Material painted, Texture clean)
+            {
+                pendingCanvas = painted;
+                pendingClean = clean;
+                hasPending = true;
+                ApplyCanvas();
+            }
+
+            /// <summary>Every frame: the canvas Sail Emblems handed over, once no drawing is on its way.</summary>
+            internal void ApplyCanvas()
+            {
+                if (!hasPending || jobRunning || jobDone)
+                    return;
+                hasPending = false;
+                Material src = pendingCanvas;
+                if (src == null || src.mainTexture == null)
+                    return;
+                Array.Copy(ReadCanvas(src, out _), rawCanvas, rawCanvas.Length);
+                rawLum = Luminance(rawCanvas);
+                rawStud = pendingClean != null ? Grab(pendingClean, src.mainTextureScale, src.mainTextureOffset) : null;
+                studBase = rawStud != null ? new Color32[rawStud.Length] : null;
+                plainLum = rawStud != null ? Luminance(rawStud) : rawLum;
+                if (src.HasProperty("_BumpMap") && Material.HasProperty("_BumpMap"))
+                    Material.SetTexture("_BumpMap", src.GetTexture("_BumpMap"));
+                if (Material.HasProperty("_Color"))
+                    Material.color = src.HasProperty("_Color") ? src.color : Color.white;
+                BakeColour();
+                Shown = -1f;
+                StudShown = -1f;
+                if (studTexture != null)
+                {
+                    studTexture.SetPixels32(StudBase);
+                    studTexture.Apply(true);
+                }
+                Plugin.Log.LogInfo($"VISUAL {sail.sailName}: new canvas '{src.name}' from Sail Emblems{(studBase != null ? ", plain one for the studding sails" : "")}");
+            }
+
+            private Color32[] StudBase => studBase ?? canvas;
 
             // ------------------------------------------------------------ studding sails (StuddingCompat)
 
@@ -395,7 +550,7 @@ namespace SailDamage
                     name = "SailDamage studding canvas", wrapMode = TextureWrapMode.Clamp,
                     filterMode = texture.filterMode, anisoLevel = texture.anisoLevel,
                 };
-                studTexture.SetPixels32(canvas);
+                studTexture.SetPixels32(StudBase);
                 studTexture.Apply(true);
                 studWork = new Color32[canvas.Length];
                 studSide = new Color32[canvas.Length];
@@ -453,7 +608,8 @@ namespace SailDamage
             // Each side on its own copy of the canvas (its patches close its own holes), then both laid together.
             private void ComputeStudding(Vector2 damage, Vector2 patched)
             {
-                Array.Copy(canvas, studWork, canvas.Length);
+                Color32[] stud = StudBase;
+                Array.Copy(stud, studWork, stud.Length);
                 for (int side = 0; side < 2; side++)
                 {
                     if (studTears[side] == null)
@@ -461,7 +617,7 @@ namespace SailDamage
                     float d = damage[side], p = patched[side];
                     Color32[] buf = side == 0 ? studWork : studSide;
                     if (side == 1)
-                        Array.Copy(canvas, studSide, canvas.Length);
+                        Array.Copy(stud, studSide, stud.Length);
                     if (p > 0f)
                     {
                         Cut(buf, Mathf.Min(d + p, 0.999f), studTears[side], studBites[side]);
@@ -476,7 +632,7 @@ namespace SailDamage
                         Color32 b = studSide[i];
                         if (b.a == 0)
                             studWork[i].a = 0;
-                        else if (studWork[i].a != 0 && (b.r != canvas[i].r || b.g != canvas[i].g || b.b != canvas[i].b))
+                        else if (studWork[i].a != 0 && (b.r != stud[i].r || b.g != stud[i].g || b.b != stud[i].b))
                             studWork[i] = b; // a starboard patch
                     }
                 BuildMips(studWork, ref studMips);
@@ -490,6 +646,12 @@ namespace SailDamage
                     Color32 c = rawCanvas[i];
                     canvas[i] = new Color32((byte)(c.r * tint.r), (byte)(c.g * tint.g), (byte)(c.b * tint.b), 255);
                 }
+                if (rawStud != null)
+                    for (int i = 0; i < rawStud.Length; i++)
+                    {
+                        Color32 c = rawStud[i];
+                        studBase[i] = new Color32((byte)(c.r * tint.r), (byte)(c.g * tint.g), (byte)(c.b * tint.b), 255);
+                    }
                 if (Material.HasProperty("_Color"))
                     Material.color = new Color(1f, 1f, 1f, tint.a);
             }
@@ -852,9 +1014,10 @@ namespace SailDamage
                             }
                             if (edge < 0f)
                                 continue;
-                            // Plain undyed sailcloth, light grey, with the weave of the sail's own canvas.
-                            Color32 w = rawCanvas[i];
-                            float weave = Mathf.Clamp((w.r * 3 + w.g * 6 + w.b) / rawLum, 0.85f, 1.12f);
+                            // Plain undyed sailcloth, light grey, with the weave of the sail's own canvas (unpainted:
+                            // the weave of a painted canvas showed the emblem on the patches, Кэп).
+                            Color32 w = rawStud != null ? rawStud[i] : rawCanvas[i];
+                            float weave = Mathf.Clamp((w.r * 3 + w.g * 6 + w.b) / (rawStud != null ? plainLum : rawLum), 0.85f, 1.12f);
                             var c = new Color(214f, 212f, 204f) * weave;
                             float kk;
                             if (edge < r * 0.9f)

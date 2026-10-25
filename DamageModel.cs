@@ -270,6 +270,30 @@ namespace SailDamage
             return done;
         }
 
+        /// <summary>Damage and patches of the sail, then of each studding sail side; null for a whole sail (ShipyardKeep).</summary>
+        internal float[] Snapshot(Sail sail)
+        {
+            float d = GetDamage(sail), p = GetPatched(sail);
+            if (d <= 0f && p <= 0f && !HasStuddingMarks(sail))
+                return null;
+            Stud st = StudOf(sail);
+            return new[] { d, p, st.Damage[0], st.Patched[0], st.Damage[1], st.Patched[1] };
+        }
+
+        /// <summary>The same sail built again by the game (ShipyardKeep): it takes over the old one's damage.</summary>
+        internal void Restore(Sail sail, float[] v)
+        {
+            damage[sail] = lastReported[sail] = Mathf.Min(v[0], MaxDamage(sail));
+            patched[sail] = v[1];
+            var st = new Stud();
+            for (int side = 0; side < 2; side++)
+            {
+                st.Damage[side] = st.Reported[side] = v[2 + side * 2];
+                st.Patched[side] = v[3 + side * 2];
+            }
+            studs[sail] = st;
+        }
+
         /// <summary>Shipyard: a new sail, no holes and no patches.</summary>
         internal void Mend(Sail sail)
         {

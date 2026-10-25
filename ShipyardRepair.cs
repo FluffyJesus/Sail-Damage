@@ -178,6 +178,7 @@ namespace SailDamage
                     n++;
                 }
                 Plugin.Log.LogInfo($"SHIPYARD {n} sails mended");
+                ShipyardKeep.Retake(__instance);
                 ShipyardUI.instance.RefreshButtons();
             }
         }
