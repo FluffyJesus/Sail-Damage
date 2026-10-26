@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -75,7 +75,7 @@ namespace SailDamage
             pos.y = floor.y - b.min.y + 0.01f;
             for (int i = 0; i < Stack; i++)
                 Spawn(anchor, pos + Vector3.up * ((b.size.y + 0.01f) * i), rot);
-            Plugin.Log.LogInfo($"SHOP sailcloth stack ({Stack}) at '{key}'");
+            Plugin.Debug($"SHOP sailcloth stack ({Stack}) at '{key}'");
         }
 
         private static void Spawn(ShopItemSpawner oakum, Vector3 pos, Quaternion rot)

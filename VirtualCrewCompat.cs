@@ -98,7 +98,7 @@ namespace SailDamage
                                 postfix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(DrawWindowPostfix)));
             harmony.Patch(resize, prefix: new HarmonyMethod(typeof(VirtualCrewCompat), nameof(HandleInWindowPrefix)));
             present = true;
-            Plugin.Log.LogInfo("CREW Virtual Crew found: Mend Sails button in its Maintenance window");
+            Plugin.Debug("CREW Virtual Crew found: Mend Sails button in its Maintenance window");
         }
 
         // ------------------------------------------------------------ boat, bolts, crew
@@ -191,7 +191,7 @@ namespace SailDamage
                 Dexterity = Mathf.Clamp((int)dexterity.GetValue(c, null), 1, 5),
             };
             currentTask.SetValue(c, task, null);
-            Plugin.Log.LogInfo($"CREW {task.Name} (dexterity {task.Dexterity}) mends the sails");
+            Plugin.Debug($"CREW {task.Name} (dexterity {task.Dexterity}) mends the sails");
             Notify($"{task.Name} is mending the sails");
         }
 
@@ -216,7 +216,7 @@ namespace SailDamage
             {
                 Plugin.Log.LogWarning($"CREW stopping the job: {e.Message}");
             }
-            Plugin.Log.LogInfo($"CREW {t.Name} stops mending: {why}");
+            Plugin.Debug($"CREW {t.Name} stops mending: {why}");
             Notify($"{t.Name}: {why}");
             pollTimer = 0f;
         }
@@ -229,7 +229,7 @@ namespace SailDamage
             if (crew == null || !crew.Contains(c) || currentTask.GetValue(c, null) != t)
             {
                 task = null; // Virtual Crew gave him other work (or sent him to bed); it cleans up its own side
-                Plugin.Log.LogInfo($"CREW {t.Name} was called away from mending");
+                Plugin.Debug($"CREW {t.Name} was called away from mending");
                 return;
             }
             if ((bool)exhausted.GetValue(c, null))

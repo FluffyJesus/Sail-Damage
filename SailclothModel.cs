@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace SailDamage
@@ -65,7 +65,7 @@ namespace SailDamage
                 rm.color = RopeColor;
             rm.name = "sailcloth rope";
             rope.AddComponent<MeshRenderer>().sharedMaterial = rm;
-            Plugin.Log.LogInfo($"SAILCLOTH model: {mf.sharedMesh.vertexCount} cloth verts, rope material '{(ropeMat != null ? ropeMat.name : "none, plain")}'");
+            Plugin.Debug($"SAILCLOTH model: {mf.sharedMesh.vertexCount} cloth verts, rope material '{(ropeMat != null ? ropeMat.name : "none, plain")}'");
         }
 
         // ------------------------------------------------------------ cloth

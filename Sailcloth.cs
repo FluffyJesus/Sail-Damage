@@ -86,7 +86,7 @@ namespace SailDamage
             }
             dir[idx] = Template;
             Ready = true;
-            Plugin.Log.LogInfo($"SAILCLOTH registered in slot {idx} (directory length {dir.Length})");
+            Plugin.Debug($"SAILCLOTH registered in slot {idx} (directory length {dir.Length})");
         }
 
         private static GameObject Build(GameObject[] dir, int idx)
@@ -147,10 +147,10 @@ namespace SailDamage
             // Its own model: a tied bundle of folded grey canvas (SailclothModel). The source's material lends the shader.
             Renderer srcRenderer = go.GetComponentInChildren<Renderer>(true);
             Material baseMat = srcRenderer != null ? srcRenderer.sharedMaterial : null;
-            Plugin.Log.LogInfo("SAILCLOTH source components: " + string.Join(", ",
+            Plugin.Debug("SAILCLOTH source components: " + string.Join(", ",
                 go.GetComponents<Component>().Select(c => c.GetType().Name).ToArray()) + $"; {go.transform.childCount} children");
             SailclothModel.Apply(go, baseMat);
-            Plugin.Log.LogInfo($"SAILCLOTH template: handling '{oakum.name}', price {item.value}");
+            Plugin.Debug($"SAILCLOTH template: handling '{oakum.name}', price {item.value}");
             return go;
         }
 
@@ -308,14 +308,14 @@ namespace SailDamage
             cloth.amount = Mathf.Max(0f, cloth.amount - done / Plugin.SailclothArea.Value * Sailcloth.FullAmount);
             if (Work(target) <= 0.001f)
             {
-                Plugin.Log.LogInfo($"MEND {target.sailName}: patched {who}, sailcloth left {cloth.amount:F2}");
+                Plugin.Debug($"MEND {target.sailName}: patched {who}, sailcloth left {cloth.amount:F2}");
                 UISoundPlayer.instance?.PlayUISound(UISounds.oakum, 1f, 1f);
             }
             cloth.UpdateLookText();
             if (cloth.amount <= 0.0001f)
             {
                 // The bolt is used up: it goes (Кэп, 0.5.2).
-                Plugin.Log.LogInfo("MEND sailcloth used up");
+                Plugin.Debug("MEND sailcloth used up");
                 cloth.DestroyItem();
             }
             return done;

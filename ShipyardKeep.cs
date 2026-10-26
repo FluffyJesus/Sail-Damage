@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
@@ -91,7 +91,7 @@ namespace SailDamage
                 if (sail == null)
                     return;
                 DamageModel.Instance.Restore(sail, __state);
-                Plugin.Log.LogInfo($"SHIPYARD {sail.sailName} built again, damage {__state[0] * 100f:F1}% kept");
+                Plugin.Debug($"SHIPYARD {sail.sailName} built again, damage {__state[0] * 100f:F1}% kept");
             }
         }
 

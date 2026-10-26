@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 
 namespace SailDamage
 {
@@ -72,7 +72,7 @@ namespace SailDamage
                 GameState.modData.Remove(Plugin.Guid);
             else
                 GameState.modData[Plugin.Guid] = data;
-            Plugin.Log.LogInfo($"SAVE {(string.IsNullOrEmpty(data) ? "no damaged sails" : data)}");
+            Plugin.Debug($"SAVE {(string.IsNullOrEmpty(data) ? "no damaged sails" : data)}");
         }
     }
 
@@ -85,7 +85,7 @@ namespace SailDamage
                 return;
             GameState.modData.TryGetValue(Plugin.Guid, out string data);
             DamageModel.Instance.Deserialize(data);
-            Plugin.Log.LogInfo($"LOAD save data: {(string.IsNullOrEmpty(data) ? "none" : data)}");
+            Plugin.Debug($"LOAD save data: {(string.IsNullOrEmpty(data) ? "none" : data)}");
         }
     }
 }

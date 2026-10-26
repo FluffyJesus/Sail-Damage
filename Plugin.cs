@@ -10,7 +10,7 @@ namespace SailDamage
     {
         public const string Guid = "kap.saildamage";
         public const string Name = "Sail Damage";
-        public const string Version = "1.0.2";
+        public const string Version = "1.0.4";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<float> OverloadStart;
@@ -22,6 +22,13 @@ namespace SailDamage
         internal static ConfigEntry<float> ThrustLoss;
         internal static ConfigEntry<bool> ShowHoles;
         internal static ConfigEntry<bool> TestKeys;
+        internal static ConfigEntry<bool> VerboseLog;
+
+        /// <summary>Damage, drawing, mending and saving details: only with Debug / VerboseLog on.</summary>
+        internal static void Debug(string text)
+        {
+            if (VerboseLog != null && VerboseLog.Value) Log.LogInfo(text);
+        }
         internal static ConfigEntry<bool> TearOff;
         internal static ConfigEntry<float> JunkMinHealth;
         internal static ConfigEntry<bool> StormBell;
@@ -71,6 +78,8 @@ namespace SailDamage
                 "Keys for testing. F9: +10% damage to every set sail of your boat. Shift+F9: reset damage and patches of " +
                 "your boat's sails. F6: a bolt of sailcloth into your hands. F8: log sail pressure (toggle). " +
                 "F10: log how every sail is drawn.");
+            VerboseLog = Config.Bind("Debug", "VerboseLog", false,
+                "Write details of damage, holes, mending, shipyard and saving to BepInEx/LogOutput.log (for bug reports). Warnings, errors and the test keys' own output are always written.");
             StormBell = Config.Bind("Warning", "StormBell", true,
                 "Ring a ship's bell while the wind could tear a set sail (full-sail pressure above OverloadStart). " +
                 "Sound: ship-bell.ogg, .wav or .mp3 next to the DLL.");

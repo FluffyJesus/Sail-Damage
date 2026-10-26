@@ -43,7 +43,7 @@ namespace SailDamage
                 }
                 if (clip != null && clip.length > 0f)
                 {
-                    Plugin.Log.LogInfo($"BELL loaded {Path.GetFileName(path)}, {clip.length:F1} s");
+                    Plugin.Debug($"BELL loaded {Path.GetFileName(path)}, {clip.length:F1} s");
                     break;
                 }
                 Plugin.Log.LogError($"BELL {path} decoded to an empty clip");
@@ -65,7 +65,9 @@ namespace SailDamage
 
         private void Update()
         {
-            if (!Plugin.StormBell.Value || !GameState.playing)
+            // Paused (the menu sets timeScale 0): no rings. The unscaled timer kept ringing into the paused audio, and
+            // all the rings played at once on resume (Кэп, 1.0.4). The schedule just waits: one ring at most after.
+            if (!Plugin.StormBell.Value || !GameState.playing || Time.timeScale <= 0f)
                 return;
             // Unscaled: asleep the game runs 16 times faster, and the bell rang every few seconds (Кэп, 1.0.0).
             checkTimer -= Time.unscaledDeltaTime;
@@ -81,11 +83,11 @@ namespace SailDamage
             bool now = pressure > Plugin.OverloadStart.Value;
             if (now && !storm)
             {
-                Plugin.Log.LogInfo($"BELL storm: full-sail pressure {pressure:F1} > {Plugin.OverloadStart.Value:F1}");
+                Plugin.Debug($"BELL storm: full-sail pressure {pressure:F1} > {Plugin.OverloadStart.Value:F1}");
                 nextRing = Time.unscaledTime; // ring at once when the storm starts
             }
             else if (!now && storm)
-                Plugin.Log.LogInfo($"BELL storm over: full-sail pressure {pressure:F1}");
+                Plugin.Debug($"BELL storm over: full-sail pressure {pressure:F1}");
             storm = now;
 
             if (storm && Time.unscaledTime >= nextRing)
@@ -106,7 +108,7 @@ namespace SailDamage
             if (now - lastWake < WakeCooldownHours)
                 return;
             lastWake = now;
-            Plugin.Log.LogInfo($"BELL woke the player: sails are tearing (day {GameState.day}, {Sun.sun.globalTime:F1} h)");
+            Plugin.Debug($"BELL woke the player: sails are tearing (day {GameState.day}, {Sun.sun.globalTime:F1} h)");
             if (clip != null && source != null)
                 source.PlayOneShot(clip, Plugin.BellVolume.Value);
             nextRing = Time.unscaledTime + Random.Range(Plugin.BellMinInterval.Value, Plugin.BellMaxInterval.Value);

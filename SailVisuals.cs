@@ -101,6 +101,7 @@ namespace SailDamage
                 done.FinishDraw();
                 done.ApplyCanvas();
             }
+            ReleaseMended();
 
             if (!Plugin.ShowHoles.Value || noShader || boat == null)
                 return;
@@ -135,9 +136,20 @@ namespace SailDamage
         }
 
         // ---------------------------------------------------------------- SailEmblems (Кэп's painted sails)
+        // The contract, both sides, is written down once in SailEmblems' Compat.cs (SailDamageLink): Draws, TakeCanvas,
+        // SetFrontOnly, FrontTexture, and Release putting back what it was given. SailEmblems finds these by
+        // reflection: keep the names and signatures.
 
-        // Plain canvas (no emblem) for each painted sail's studding sails, kept for a sail torn later.
-        private readonly Dictionary<Sail, Texture> cleanCanvas = new Dictionary<Sail, Texture>();
+        // What Sail Emblems last handed over for each painted sail, kept for a sail torn later: the painted canvas (a torn
+        // canvas is made from it; with Front side only the cloth wears the plain one, and a sail torn then showed
+        // unpainted for a moment, Кэп 1.0.3) and the same canvas plain (studding sails, patches, the back).
+        private sealed class Given
+        {
+            internal Material Painted;
+            internal Texture Clean;
+        }
+
+        private readonly Dictionary<Sail, Given> given = new Dictionary<Sail, Given>();
 
         /// <summary>
         /// SailEmblems: the sail has a new painted canvas (and the same canvas unpainted, for its studding sails; null
@@ -148,16 +160,101 @@ namespace SailDamage
         {
             if (instance == null || sail == null)
                 return false;
-            if (clean != null)
-                instance.cleanCanvas[sail] = clean;
+            if (painted != null || clean != null)
+                instance.given[sail] = new Given { Painted = painted, Clean = clean };
             else
-                instance.cleanCanvas.Remove(sail);
+                instance.given.Remove(sail);
             if (!instance.holes.TryGetValue(sail, out Holes h) || painted == null)
                 return false;
             h.SetCanvas(painted, clean);
             instance.Wear(sail, h);
             instance.timer = 0f; // draw the tears over it on the next frame
             return true;
+        }
+
+        /// <summary>
+        /// The sail was mended as new (shipyard): no holes and no patches left to draw, so the torn canvas goes and the
+        /// canvas it was made from comes back. Up to 1.0.2 it stayed, and Sail Emblems kept taking the sail for torn
+        /// (its Front side only stayed off after a shipyard repair, Кэп). A drawing on its way is let finish first.
+        /// </summary>
+        internal static void Release(Sail sail)
+        {
+            if (instance != null && sail != null && instance.holes.ContainsKey(sail))
+                instance.releasing.Add(sail);
+        }
+
+        private readonly HashSet<Sail> releasing = new HashSet<Sail>();
+
+        private void ReleaseMended()
+        {
+            if (releasing.Count == 0)
+                return;
+            List<Sail> done = null;
+            foreach (Sail s in releasing)
+            {
+                if (s == null || !holes.TryGetValue(s, out Holes h))
+                {
+                    (done ??= new List<Sail>()).Add(s);
+                    continue;
+                }
+                if (h.Busy)
+                    continue;
+                // damaged again meanwhile: keep drawing it
+                if (DamageModel.Instance != null && (DamageModel.Instance.GetDamage(s) > 0f || DamageModel.Instance.GetPatched(s) > 0f || DamageModel.Instance.HasStuddingMarks(s)))
+                {
+                    (done ??= new List<Sail>()).Add(s);
+                    continue;
+                }
+                h.Unloose();
+                Material back = h.Source;
+                Renderer r = s.cloth != null ? s.cloth.GetComponent<Renderer>() : null;
+                ReefEffectAnimUniversal reef = s.GetComponentInChildren<ReefEffectAnimUniversal>();
+                if (back != null && r != null)
+                {
+                    if (reef != null && IsFurled(reef))
+                    {
+                        if (UnfurledMaterial(reef) == h.Material || UnfurledMaterial(reef)?.mainTexture == h.Texture)
+                            UnfurledMaterial(reef) = back;
+                    }
+                    else if (r.sharedMaterial == h.Material || r.sharedMaterial?.mainTexture == h.Texture)
+                        r.sharedMaterial = back;
+                }
+                h.Dispose();
+                holes.Remove(s);
+                (done ??= new List<Sail>()).Add(s);
+                Plugin.Debug($"VISUAL {s.sailName}: mended as new, '{back?.name}' back on the sail");
+            }
+            if (done != null)
+                foreach (Sail s in done)
+                    releasing.Remove(s);
+        }
+
+        /// <summary>
+        /// SailEmblems' Front side only on a sail we draw: our material shows the plain canvas with the holes, and the
+        /// painted canvas with the same holes is drawn as a one-sided layer over it (FrontTexture). Returns whether it is
+        /// on (it needs the plain canvas from TakeCanvas). Called by reflection, keep the signature.
+        /// </summary>
+        public static bool SetFrontOnly(Sail sail, bool on)
+        {
+            if (instance == null || sail == null || !instance.holes.TryGetValue(sail, out Holes h))
+                return false;
+            bool was = h.Split;
+            bool now = h.SetSplit(on);
+            if (now != was)
+                instance.timer = 0f;
+            return now;
+        }
+
+        /// <summary>SailEmblems: the painted canvas with holes and its tiling, for the one-sided layer; null if not split.</summary>
+        public static Texture FrontTexture(Sail sail, out Vector2 scale, out Vector2 offset)
+        {
+            scale = Vector2.one;
+            offset = Vector2.zero;
+            if (instance == null || sail == null || !instance.holes.TryGetValue(sail, out Holes h) || !h.Split)
+                return null;
+            scale = h.Material.mainTextureScale;
+            offset = h.Material.mainTextureOffset;
+            return h.FrontTexture;
         }
 
         /// <summary>SailEmblems: we wear our torn canvas on this sail. Called by reflection, keep the signature.</summary>
@@ -191,7 +288,7 @@ namespace SailDamage
                 {
                     h.Dispose();
                     holes.Remove(s);
-                    cleanCanvas.Remove(s);
+                    given.Remove(s);
                 }
             }
             failed.RemoveWhere(s => s == null);
@@ -240,7 +337,7 @@ namespace SailDamage
                     Plugin.Log.LogError($"VISUAL no cutout shader ('{CutoutShader}' or legacy cutout) found, holes are off");
                     return false;
                 }
-                Plugin.Log.LogInfo($"VISUAL cutout shader '{cutout.name}', supported={cutout.isSupported}");
+                Plugin.Debug($"VISUAL cutout shader '{cutout.name}', supported={cutout.isSupported}");
             }
 
             Renderer r = sail.cloth != null ? sail.cloth.GetComponent<Renderer>() : null;
@@ -252,6 +349,9 @@ namespace SailDamage
             ReefEffectAnimUniversal reef = sail.GetComponentInChildren<ReefEffectAnimUniversal>();
             bool furled = reef != null && IsFurled(reef);
             Material src = furled ? UnfurledMaterial(reef) : r.sharedMaterial;
+            given.TryGetValue(sail, out Given g);
+            if (g?.Painted != null && g.Painted.mainTexture != null)
+                src = g.Painted;
             if (src == null || src.mainTexture == null)
                 return false; // furled before the game saved its canvas, try again later
             // While furled the cloth wears Refs.emptyMaterial (a white particle cloud). 0.4.x sometimes copied that
@@ -274,9 +374,9 @@ namespace SailDamage
                 UnfurledMaterial(reef) = h.Material;
             else
                 r.sharedMaterial = h.Material;
-            if (cleanCanvas.TryGetValue(sail, out Texture clean) && clean != null)
-                h.SetCanvas(src, clean); // a painted sail: its studding sails get the plain canvas
-            Plugin.Log.LogInfo($"VISUAL {sail.sailName} ({sail.category}{(DamageModel.IsBattened(sail) ? ", battened" : "")}): '{src.shader.name}' -> '{cutout.name}', canvas {src.mainTexture.name} " +
+            if (g?.Clean != null)
+                h.SetCanvas(src, g.Clean); // a painted sail: its studding sails get the plain canvas
+            Plugin.Debug($"VISUAL {sail.sailName} ({sail.category}{(DamageModel.IsBattened(sail) ? ", battened" : "")}): '{src.shader.name}' -> '{cutout.name}', canvas {src.mainTexture.name} " +
                                $"{src.mainTexture.width}x{src.mainTexture.height} tiling {src.mainTextureScale} -> {h.Info}");
             return true;
         }
@@ -315,14 +415,29 @@ namespace SailDamage
             internal readonly Material Material;
             internal float Shown = -1f;
             internal readonly string Info;
-            internal Texture Texture => texture;
+            // what the torn material shows: the canvas, or with Front side only the plain back (Split)
+            internal Texture Texture => Material.mainTexture;
             internal bool Busy => jobRunning || jobDone;
+
+            // The material the torn one was made from (the game's canvas, or Sail Emblems' painted one), put back when the
+            // sail is mended as new.
+            internal Material Source;
+
+            // Mended as new at the shipyard: cloth held as before, ropes back; the caller puts Source back on.
+            internal void Unloose()
+            {
+                SetClothLoose(false);
+                HideLowerRopes(false);
+                tornShown = false;
+            }
 
             // The sail is gone: free what we made for it.
             internal void Dispose()
             {
                 UnityEngine.Object.Destroy(Material);
                 UnityEngine.Object.Destroy(texture);
+                if (backTexture != null)
+                    UnityEngine.Object.Destroy(backTexture);
                 if (studTexture != null)
                     UnityEngine.Object.Destroy(studTexture);
             }
@@ -384,6 +499,7 @@ namespace SailDamage
                 rawCanvas = (Color32[])canvas.Clone();
                 rawLum = Luminance(rawCanvas);
 
+                Source = src;
                 Material = new Material(src) { shader = cutout, name = src.name + " (torn)" };
                 Material.mainTexture = texture;
                 // The sail colour (Sail.ChangeSailColor sets material.color) is baked into the canvas, so patches can
@@ -483,6 +599,8 @@ namespace SailDamage
 
             internal void SetCanvas(Material painted, Texture clean)
             {
+                if (painted != null)
+                    Source = painted;
                 pendingCanvas = painted;
                 pendingClean = clean;
                 hasPending = true;
@@ -515,7 +633,7 @@ namespace SailDamage
                     studTexture.SetPixels32(StudBase);
                     studTexture.Apply(true);
                 }
-                Plugin.Log.LogInfo($"VISUAL {sail.sailName}: new canvas '{src.name}' from Sail Emblems{(studBase != null ? ", plain one for the studding sails" : "")}");
+                Plugin.Debug($"VISUAL {sail.sailName}: new canvas '{src.name}' from Sail Emblems{(studBase != null ? ", plain one for the studding sails" : "")}");
             }
 
             private Color32[] StudBase => studBase ?? canvas;
@@ -587,7 +705,7 @@ namespace SailDamage
                     info.Append(side == 0 ? " port " : " starboard ").Append(outline.Info);
                 }
                 StudShown = -1f;
-                Plugin.Log.LogInfo($"VISUAL {sail.sailName}: studding sail tears laid out,{info}");
+                Plugin.Debug($"VISUAL {sail.sailName}: studding sail tears laid out,{info}");
             }
 
             internal bool StuddingNeedsDraw(Vector2 damage, Vector2 patched)
@@ -661,7 +779,7 @@ namespace SailDamage
             {
                 // Renderer.material made an instance of ours to recolour it: take its colour and wear ours again.
                 Material worn = smr != null ? smr.sharedMaterial : null;
-                if (worn != null && worn != Material && worn.mainTexture == texture && worn.HasProperty("_Color") && Material.HasProperty("_Color"))
+                if (worn != null && worn != Material && worn.mainTexture == Material.mainTexture && worn.HasProperty("_Color") && Material.HasProperty("_Color"))
                 {
                     Material.color = worn.color;
                     smr.sharedMaterial = Material;
@@ -675,17 +793,17 @@ namespace SailDamage
                         BakeColour();
                         Shown = -1f;
                         StudShown = -1f;
-                        Plugin.Log.LogInfo($"VISUAL {sail.sailName}: sail colour {c} baked into the canvas");
+                        Plugin.Debug($"VISUAL {sail.sailName}: sail colour {c} baked into the canvas");
                     }
                 }
                 Material m = smr != null ? smr.sharedMaterial : null;
-                if (m == null || m.mainTexture == texture)
+                if (m == null || m.mainTexture == Material.mainTexture)
                     return;
                 // The furl placeholder belongs on a furled sail only; on a set one it shows as a white cloud.
                 if (IsEmpty(m) && sail.currentUnroll < 0.04f)
                     return;
                 smr.sharedMaterial = Material;
-                Plugin.Log.LogInfo($"VISUAL {sail.sailName}: '{m.name}' ({m.mainTexture?.name}) was on the sail, torn canvas put back");
+                Plugin.Debug($"VISUAL {sail.sailName}: '{m.name}' ({m.mainTexture?.name}) was on the sail, torn canvas put back");
             }
 
             // F10 in 0.4.8: the torn balanced lug had NaN bounds, its cloth simulation had blown up and drew as a white
@@ -761,6 +879,7 @@ namespace SailDamage
                     studShownPatched = studPatched;
                 }
                 mipLevels = texture.mipmapCount;
+                jobBack = Split && backTexture != null && studBase != null;
                 jobRunning = true;
                 System.Threading.ThreadPool.QueueUserWorkItem(_ =>
                 {
@@ -803,6 +922,12 @@ namespace SailDamage
                         studTexture.SetPixels32(studMips[l], l);
                     studTexture.Apply(false);
                 }
+                if (jobBack && backTexture != null)
+                {
+                    for (int l = 0; l < backMips.Length; l++)
+                        backTexture.SetPixels32(backMips[l], l);
+                    backTexture.Apply(false);
+                }
             }
 
             private void Compute(float damage, float patched, bool cutLower)
@@ -818,6 +943,66 @@ namespace SailDamage
                 if (cutLower)
                     CutLowerPart();
                 BuildMips(work, ref mips);
+                if (jobBack)
+                    ComputeBack();
+            }
+
+            // ------------------------------------------------------------ Sail Emblems' Front side only
+
+            // A painted sail shown on its front face only: Sail Emblems lays the painted canvas as a one-sided layer over
+            // ours, so ours shows the plain canvas (both faces) and the painted one goes to that layer, both with the same
+            // holes and patches (Кэп, 1.0.3: before, a torn sail was painted on both faces).
+            internal bool Split { get; private set; }
+            private Texture2D backTexture;
+            private Color32[] backWork;
+            private Color32[][] backMips;
+            private bool jobBack;
+
+            /// <summary>The painted canvas with its holes, for the one-sided layer; null unless split.</summary>
+            internal Texture FrontTexture => Split ? texture : null;
+
+            internal bool SetSplit(bool on)
+            {
+                if (on && studBase == null)
+                    on = false; // no plain canvas to show behind
+                if (on == Split)
+                    return Split;
+                Split = on;
+                if (on && backTexture == null)
+                {
+                    backTexture = new Texture2D(width, height, TextureFormat.RGBA32, true)
+                    {
+                        name = "SailDamage back canvas", wrapMode = TextureWrapMode.Clamp, filterMode = texture.filterMode, anisoLevel = texture.anisoLevel,
+                    };
+                    backTexture.SetPixels32(studBase);
+                    backTexture.Apply(true);
+                    backWork = new Color32[canvas.Length];
+                }
+                Material.mainTexture = on ? (Texture)backTexture : texture;
+                Shown = -1f; // draw the holes into it
+                Plugin.Debug($"VISUAL {sail.sailName}: front side only {(on ? "on" : "off")} (Sail Emblems)");
+                return Split;
+            }
+
+            // The back: holes as on the front, patches as on the front (plain sailcloth either way), elsewhere the plain canvas.
+            private void ComputeBack()
+            {
+                Color32[] plain = studBase;
+                for (int i = 0; i < work.Length; i++)
+                {
+                    Color32 f = work[i];
+                    if (f.a == 0)
+                    {
+                        Color32 p = plain[i];
+                        p.a = 0;
+                        backWork[i] = p;
+                    }
+                    else if (f.r != canvas[i].r || f.g != canvas[i].g || f.b != canvas[i].b)
+                        backWork[i] = f; // a patch
+                    else
+                        backWork[i] = plain[i];
+                }
+                BuildMips(backWork, ref backMips);
             }
 
             // Box-filtered mip chain, as Texture2D.Apply(true) would make it, but off the main thread.
@@ -1146,7 +1331,7 @@ namespace SailDamage
                     if (t < 0.2f) pinnedLow++;
                     if (t > 0.8f) pinnedHigh++;
                 }
-                Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: {n} verts, {co.Length} particles, height span {span:F2} m, up in uv ({fa:F2},{fb:F2}), " +
+                Plugin.Debug($"TEAROFF {sail.sailName}: {n} verts, {co.Length} particles, height span {span:F2} m, up in uv ({fa:F2},{fb:F2}), " +
                                    $"maxDistance {mdMin:F2}..{mdMax:F2}, pinned {pinned} (low {pinnedLow}, high {pinnedHigh})");
                 return true;
             }
@@ -1220,7 +1405,7 @@ namespace SailDamage
                     yardAxis = Vector3.zero;
                     yardAxis[axis] = 1f;
                 }
-                Plugin.Log.LogInfo(yard != null
+                Plugin.Debug(yard != null
                     ? $"TEAROFF {sail.sailName}: yard '{yard.name}', {best:F1} m long"
                     : $"TEAROFF {sail.sailName}: no yard found, measuring from the mast");
                 return yard != null;
@@ -1310,7 +1495,7 @@ namespace SailDamage
                         cloth.sleepThreshold = originalSleep;
                         cloth.capsuleColliders = originalCapsules;
                         cloth.sphereColliders = originalSpheres;
-                        Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: cloth restored");
+                        Plugin.Debug($"TEAROFF {sail.sailName}: cloth restored");
                     }
                     return;
                 }
@@ -1354,7 +1539,7 @@ namespace SailDamage
                         co[i].maxDistance = free;
                 }
                 cloth.coefficients = co;
-                Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: cloth before: tethers {cloth.useTethers}, self collision {cloth.selfCollisionDistance:F2}, " +
+                Plugin.Debug($"TEAROFF {sail.sailName}: cloth before: tethers {cloth.useTethers}, self collision {cloth.selfCollisionDistance:F2}, " +
                                    $"capsules {cloth.capsuleColliders?.Length}, spheres {cloth.sphereColliders?.Length}, virtual {cloth.useVirtualParticles:F2}, " +
                                    $"sleep {cloth.sleepThreshold:F3}, friction {cloth.friction:F2}, world velocity {cloth.worldVelocityScale:F2}, " +
                                    $"world acceleration {cloth.worldAccelerationScale:F2}, continuous {cloth.enableContinuousCollision}");
@@ -1394,7 +1579,7 @@ namespace SailDamage
                 TornCloths.Add(cloth);
                 cloth.enabled = false;
                 cloth.enabled = true;
-                Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: {freed} pins let go, {eased} given {slack:F1} m slack, {headPinned} pinned at the yard, " +
+                Plugin.Debug($"TEAROFF {sail.sailName}: {freed} pins let go, {eased} given {slack:F1} m slack, {headPinned} pinned at the yard, " +
                                    $"free reach {(free < float.MaxValue ? free.ToString("F1") + " m" : "unlimited")}, gentle {gentle}; " +
                                    $"gravity {originalGravity}, bending {originalBending:F2}, stretching {cloth.stretchingStiffness:F2}, " +
                                    $"random {originalRandom}, tethers {originalTethers}, solver {originalSolver:F0} Hz");
@@ -1413,7 +1598,7 @@ namespace SailDamage
                         kv.Key.ForceDisplay();
                     }
                     if (hiddenRopes.Count > 0)
-                        Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: {hiddenRopes.Count} ropes shown again");
+                        Plugin.Debug($"TEAROFF {sail.sailName}: {hiddenRopes.Count} ropes shown again");
                     hiddenRopes.Clear();
                     return;
                 }
@@ -1440,7 +1625,7 @@ namespace SailDamage
                     if (toSail)
                         t = Mathf.Min(t, (Measure(at.position) - worldLow) / worldSpan);
                     bool lower = t < CutHeight + 0.15f;
-                    Plugin.Log.LogInfo($"TEAROFF {sail.sailName}: rope {rope.name} -> {at.name}, lower end at height {t:F2}{(lower ? ", hidden" : "")}");
+                    Plugin.Debug($"TEAROFF {sail.sailName}: rope {rope.name} -> {at.name}, lower end at height {t:F2}{(lower ? ", hidden" : "")}");
                     if (!lower)
                         continue;
                     hiddenRopes.Add(new KeyValuePair<RopeEffect, Transform>(rope, at));

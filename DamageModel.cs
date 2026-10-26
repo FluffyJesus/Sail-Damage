@@ -106,7 +106,7 @@ namespace SailDamage
                 {
                     st.Reported[side] = total;
                     string name = side == 0 ? "port" : "starboard";
-                    Plugin.Log.LogInfo($"OVERLOAD {sail.sailName} {name} studding sail (set {F(set * 100f)}%) P={F(full)} total={F(total * 100f)}%");
+                    Plugin.Debug($"OVERLOAD {sail.sailName} {name} studding sail (set {F(set * 100f)}%) P={F(full)} total={F(total * 100f)}%");
                     if (Plugin.OverloadMessages.Value)
                         PressureLogger.Instance?.ShowMessage($"{sail.sailName}, {name} studding sail: overloaded, damage {total * 100f:F0}%");
                 }
@@ -205,7 +205,7 @@ namespace SailDamage
             lastReported[sail] = total;
 
             string text = $"{sail.sailName}: jolt {before:F0}°/s, damage +{hit * 100f:F1}% (total {total * 100f:F1}%)";
-            Plugin.Log.LogInfo($"HIT {sail.sailName} speed={F(before)} dmg+={F(hit * 100f)}% total={F(total * 100f)}%");
+            Plugin.Debug($"HIT {sail.sailName} speed={F(before)} dmg+={F(hit * 100f)}% total={F(total * 100f)}%");
             PressureLogger.Instance?.ShowMessage(text);
         }
 
@@ -228,7 +228,7 @@ namespace SailDamage
             if (total - reported >= 0.01f)
             {
                 lastReported[sail] = total;
-                Plugin.Log.LogInfo($"OVERLOAD {sail.sailName} P={F(sail.appliedWindForce)} total={F(total * 100f)}%");
+                Plugin.Debug($"OVERLOAD {sail.sailName} P={F(sail.appliedWindForce)} total={F(total * 100f)}%");
                 if (Plugin.OverloadMessages.Value)
                     PressureLogger.Instance?.ShowMessage($"{sail.sailName}: overloaded, damage {total * 100f:F0}%");
             }
@@ -302,7 +302,8 @@ namespace SailDamage
             patched[sail] = 0f;
             lastReported[sail] = 0f;
             studs[sail] = new Stud();
-            Plugin.Log.LogInfo($"MEND {sail.sailName}: as new");
+            SailVisuals.Release(sail);
+            Plugin.Debug($"MEND {sail.sailName}: as new");
         }
 
         // Junk and fin sails are battened: they never tear away, they keep at least JunkMinHealth.
@@ -327,7 +328,7 @@ namespace SailDamage
             damage[sail] = Mathf.Clamp(value, 0f, MaxDamage(sail));
             lastReported[sail] = damage[sail];
             KeepPatchesInRange(sail, before);
-            Plugin.Log.LogInfo($"TEST {sail.sailName} damage set to {F(damage[sail] * 100f)}%");
+            Plugin.Debug($"TEST {sail.sailName} damage set to {F(damage[sail] * 100f)}%");
         }
 
         /// <summary>Test keys: add damage to one side of the studding sails.</summary>
@@ -335,7 +336,7 @@ namespace SailDamage
         {
             float total = AddStuddingDamage(sail, side, amount);
             StudOf(sail).Reported[side] = total;
-            Plugin.Log.LogInfo($"TEST {sail.sailName} {(side == 0 ? "port" : "starboard")} studding sail damage set to {F(total * 100f)}%");
+            Plugin.Debug($"TEST {sail.sailName} {(side == 0 ? "port" : "starboard")} studding sail damage set to {F(total * 100f)}%");
         }
 
         /// <summary>Damage 0..1 of a sail; on first sight it picks up its value from the save.</summary>
@@ -358,7 +359,7 @@ namespace SailDamage
                     st.Patched[side] = Mathf.Clamp(saved[3 + side * 2], 0f, 1f - st.Damage[side]);
                 }
                 studs[sail] = st;
-                Plugin.Log.LogInfo($"LOAD {sail.sailName} [{key}] damage={F(d * 100f)}% patched={F(patched[sail] * 100f)}%" +
+                Plugin.Debug($"LOAD {sail.sailName} [{key}] damage={F(d * 100f)}% patched={F(patched[sail] * 100f)}%" +
                                    (HasStuddingMarks(sail) ? $" studding port {F(st.Damage[0] * 100f)}%/{F(st.Patched[0] * 100f)}%, " +
                                                              $"starboard {F(st.Damage[1] * 100f)}%/{F(st.Patched[1] * 100f)}%" : ""));
             }

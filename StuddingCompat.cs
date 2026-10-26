@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -50,7 +50,7 @@ namespace SailDamage
             if (visuals)
                 harmony.Patch(sync, postfix: new HarmonyMethod(typeof(StuddingCompat), nameof(SyncColorPostfix)));
             Present = true;
-            Plugin.Log.LogInfo($"STUDDING StuddingSails found: own damage for studding sails{(visuals ? ", own holes" : ", no holes (canvas parts not found)")}");
+            Plugin.Debug($"STUDDING StuddingSails found: own damage for studding sails{(visuals ? ", own holes" : ", no holes (canvas parts not found)")}");
         }
 
         private static object Rig(Sail sail) => Present && sail != null ? of.Invoke(null, new object[] { sail }) : null;

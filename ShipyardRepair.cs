@@ -77,7 +77,7 @@ namespace SailDamage
             copy.transform.localScale = src.localScale;
             copy.GetComponent<ShipyardButton>().function = PatchSails;
             buttonText = copy.GetComponentInChildren<TextMesh>();
-            Plugin.Log.LogInfo($"SHIPYARD Patch Sails button at {copy.transform.localPosition} (repair at {src.localPosition}, step {step})");
+            Plugin.Debug($"SHIPYARD Patch Sails button at {copy.transform.localPosition} (repair at {src.localPosition}, step {step})");
         }
 
         [HarmonyPatch(typeof(ShipyardUI), "ShowUI")]
@@ -177,7 +177,7 @@ namespace SailDamage
                     DamageModel.Instance.Mend(s);
                     n++;
                 }
-                Plugin.Log.LogInfo($"SHIPYARD {n} sails mended");
+                Plugin.Debug($"SHIPYARD {n} sails mended");
                 ShipyardKeep.Retake(__instance);
                 ShipyardUI.instance.RefreshButtons();
             }
